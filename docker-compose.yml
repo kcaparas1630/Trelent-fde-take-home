@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Python API backend
+  api:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - TRELENT_API_URL=${TRELENT_API_URL:-https://api.trelent.com}
+      - TRELENT_API_TOKEN=${TRELENT_API_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://web:3000
+    volumes:
+      - ./scripts/data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Next.js frontend
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  data:

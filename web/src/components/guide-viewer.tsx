@@ -21,7 +21,7 @@ export function GuideViewer({ title, description, html }: GuideViewerProps) {
       </CardHeader>
       <CardContent>
         {/* TODO: Consider adding an editor here for user modifications */}
-        <guide
+        <div
           className="prose prose-zinc dark:prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: html }}
         />

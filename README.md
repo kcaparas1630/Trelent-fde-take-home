@@ -1,37 +1,167 @@
-# Trelent Forward-Deployed Engineer Take-Home
-Welcome to the Trelent FDE take-home! This exercise builds directly on the technical question from your application.
+# Guide Generator - Document to HTML Pipeline
 
-### Problem recap
+A full-stack application that converts documents (PDFs, Word docs, etc.) into clean, organized HTML guides using Trelent's Data Ingestion API and OpenAI.
 
-A customer has a messy folder of internal guides (PDFs, Word docs, etc.) and wants them turned into a clean set of HTML “guides” following a consistent template. Some new guides combine multiple old documents; others reuse sections. You have:
+## What I Built
 
-* The **Trelent Data Ingestion API** that converts any file to Markdown, which takes a while to run.
-* The **OpenAI API** to rewrite and format content, which can be slow or occasionally fail.
+A complete document-to-HTML conversion pipeline with:
 
-Runs may process anywhere from a few to thousands of guides. This should be a **repeatable background pipeline**, not a single blocking web request, and it ultimately needs to be usable by non-technical users who don’t think in terms of “jobs” or “pipelines.”
+- **Next.js Web UI** - Drag-and-drop interface for non-technical users
+- **Python Backend** - FastAPI server orchestrating a 5-stage processing pipeline
+- **Real-time Progress** - Percentage-based tracking with polling updates
+- **Topic Grouping** - AI-powered organization of documents by topic
+- **Error Recovery** - Continue on failures + retry failed files
 
-### Your task
+## Quick Start
 
-In this take-home, we want to see how you turn that idea into a small end-to-end prototype:
+### Prerequisites
 
-* **Next JS UI (`/web`):**
-  Build a minimal Next.js app that lets someone at Trelent trigger your workflow and see what happened. It doesn't need to be beautiful; it does need to be obvious how to use it, and a great version would be one that is usable by non-technical users who don't think in terms of "jobs" or "pipelines" or "queues".
+- Python 3.11+
+- Node.js 18+
+- Trelent API token
+- OpenAI API key
 
-* **Backend workflow (scripts/services):**
-  Implement a scrappy but real pipeline (Python is ideal, but use what you're fastest in) that *could* orchestrate ingestion, search, and LLM rewriting for a batch of guides. Focus on structure, error handling, and how you'd scale it up, even if some pieces are stubbed or mocked.
+### Option 1: Docker Compose (Recommended)
 
-* **IMPORTANT: Replace this README with a short, clear explanation of:**
+```bash
+# 1. Create .env file with your API keys
+cp .env.example .env
+# Edit .env with your TRELENT_API_TOKEN and OPENAI_API_KEY
 
-  * What you built and how to run it
-  * How the pieces fit together
-  * Key tradeoffs you made
-  * What you'd do next with more time
+# 2. Start everything
+docker-compose up --build
 
-**BONUS:** Make a docker compose file that can be used to run everything. If it's difficult for us to run your prototype end to end, we cannot effectively evaluate it.
+# 3. Open http://localhost:3000
+```
 
-You’re free to add additional projects or packages in the repo as needed—just stick to the package tools described in `/scripts/README.md` and `/web/README.md`.
+### Option 2: Manual Setup
 
-### Ingestion API
-Trelent's data ingestion API is a REST API with prebuilt SDKs for Python and Typescript. In the take-home portal, you will find an auth token to use the API in your testing. Set the base URL as `https://api.trelent.com`. You can read the documentation [here](https://docs.trelent.com/). We recommend using the `File` connector to upload files to the API then convert them. If you really want, you may use an external service to upload files somewhere and use our APIs `URL` connector to convert them.
+**Backend (Python):**
 
-Unlike the application question, we will not be providing you a search API as it requires additional infrastructure to be built.
+```bash
+cd scripts
+
+# Install uv (if needed)
+pip install uv
+
+# Install dependencies
+uv pip install -e .
+
+# Create .env file
+cp .env.example .env
+# Edit with your API keys
+
+# Run the server
+python -m src.main
+```
+
+**Frontend (Next.js):**
+
+```bash
+cd web
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+Open http://localhost:3000 (frontend) and http://localhost:8000/docs (API docs)
+
+## How It Works
+
+### Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Next.js UI    │────▶│  Python API     │────▶│  Trelent API    │
+│  (Port 3000)    │     │  (Port 8000)    │     │  + OpenAI       │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌─────────────────┐
+                        │    SQLite DB    │
+                        │  + File Store   │
+                        └─────────────────┘
+```
+
+### 5-Stage Pipeline
+
+| Stage | Progress | Description |
+|-------|----------|-------------|
+| 1. Upload | 0-5% | Validate and store uploaded files |
+| 2. Ingest | 5-38% | Convert files to Markdown via Trelent API |
+| 3. Group | 38-45% | AI analyzes content and groups by topic |
+| 4. Rewrite | 45-85% | OpenAI rewrites and formats each group |
+| 5. Output | 85-100% | Generate final HTML guides |
+
+### Key Files
+
+```
+/scripts
+├── src/
+│   ├── api/           # FastAPI server and routes
+│   ├── clients/       # Trelent + OpenAI API clients
+│   ├── pipeline/      # 5-stage orchestrator
+│   └── storage/       # SQLite + file management
+└── pyproject.toml
+
+/web
+├── src/
+│   ├── app/           # Next.js pages
+│   ├── components/    # UI components
+│   ├── hooks/         # Polling + upload hooks
+│   └── lib/           # API client + types
+└── package.json
+```
+
+## Key Tradeoffs
+
+| Decision | Why | Alternative for Production |
+|----------|-----|---------------------------|
+| SQLite | Simple, no external deps | PostgreSQL with connection pooling |
+| Polling (2s) | Works everywhere, simple | WebSockets for true real-time |
+| Local file storage | Easy debugging | S3 or cloud storage |
+| Sequential processing | Simpler error handling | Celery/RQ for parallelism |
+| Single OpenAI model | Consistent results | Model routing by task type |
+
+## What I'd Do Next
+
+**With More Time:**
+
+1. **Parallel Processing** - Use Celery or asyncio.gather for concurrent file ingestion
+2. **WebSocket Updates** - Replace polling with real-time push notifications
+3. **Template Customization** - Let users choose/edit HTML templates
+4. **Search** - Add full-text search across generated guides
+5. **Auth** - User accounts and per-user guide libraries
+6. **Caching** - Cache Trelent/OpenAI responses for identical content
+7. **Better Error Messages** - More specific error handling with suggested fixes
+8. **Tests** - Unit tests for pipeline stages, E2E tests for UI
+9. **Rate Limiting** - Respect API rate limits with proper backoff
+10. **Monitoring** - Add logging, metrics, and alerting
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/upload` | Upload files and start processing |
+| GET | `/api/batches` | List all batches |
+| GET | `/api/batches/{id}` | Get batch progress |
+| POST | `/api/batches/{id}/retry` | Retry failed files |
+| GET | `/api/guides` | List completed guides |
+| GET | `/api/guides/{id}/html` | Get guide HTML content |
+
+## Environment Variables
+
+```env
+# Required
+TRELENT_API_TOKEN=your-token
+OPENAI_API_KEY=your-key
+
+# Optional
+TRELENT_API_URL=https://api.trelent.com
+API_HOST=0.0.0.0
+API_PORT=8000
+CORS_ORIGINS=http://localhost:3000
+```

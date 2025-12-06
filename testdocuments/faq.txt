@@ -1,0 +1,129 @@
+Frequently Asked Questions
+
+General Questions
+
+What is this platform?
+Our platform is a comprehensive solution for managing projects, documents, and team collaboration. It combines powerful features with an intuitive interface to help teams work more efficiently.
+
+How much does it cost?
+We offer several pricing tiers:
+- Free: Up to 3 users, 5GB storage
+- Professional: $10/user/month, 100GB storage
+- Enterprise: Custom pricing, unlimited storage
+
+Is there a free trial?
+Yes! We offer a 14-day free trial of our Professional plan with no credit card required. You can upgrade, downgrade, or cancel at any time.
+
+Account and Billing
+
+How do I upgrade my account?
+1. Go to Account Settings > Billing
+2. Select your desired plan
+3. Enter payment information
+4. Confirm the upgrade
+
+Changes take effect immediately, and you'll be prorated for the current billing period.
+
+Can I cancel anytime?
+Yes, you can cancel your subscription at any time. Your account will remain active until the end of the current billing period, and no further charges will be made.
+
+What payment methods do you accept?
+We accept:
+- Credit cards (Visa, MasterCard, American Express)
+- PayPal
+- Bank transfer (for Enterprise plans)
+- Purchase orders (for Enterprise plans)
+
+Features and Functionality
+
+Can I import data from other tools?
+Yes! We support imports from:
+- CSV files
+- Excel spreadsheets
+- Other project management tools (contact support)
+- Cloud storage services
+
+Export capabilities include CSV, PDF, and JSON formats.
+
+Is there a mobile app?
+Yes, we offer native mobile apps for iOS and Android with full offline functionality. Download from the App Store or Google Play.
+
+Can multiple people work on the same document?
+Yes, our platform supports real-time collaboration. Multiple users can edit simultaneously, with changes synced instantly and conflicts automatically resolved.
+
+Security and Privacy
+
+Is my data secure?
+We take security seriously:
+- AES-256 encryption for data at rest
+- TLS 1.3 for data in transit
+- SOC 2 Type II certified
+- GDPR compliant
+- Regular security audits
+
+Where is data stored?
+Data is stored in secure data centers with multiple redundancy. You can choose your data region during account setup. We offer:
+- US East
+- US West
+- EU (Frankfurt)
+- Asia Pacific (Singapore)
+
+Who can see my data?
+Only you and team members you explicitly invite can access your data. Our staff cannot access your data except in rare support cases with your explicit permission.
+
+Do you backup my data?
+Yes, we perform:
+- Continuous backups throughout the day
+- Daily snapshots retained for 30 days
+- Weekly snapshots retained for 1 year
+
+You can also export and backup your data at any time.
+
+Technical Questions
+
+What browsers are supported?
+We support the latest versions of:
+- Google Chrome (recommended)
+- Mozilla Firefox
+- Safari
+- Microsoft Edge
+
+Internet Explorer is not supported.
+
+What are the system requirements?
+Minimum requirements:
+- Modern web browser
+- Internet connection (1 Mbps minimum)
+- JavaScript enabled
+- Cookies enabled
+
+For optimal performance, we recommend:
+- 10 Mbps or faster internet
+- 8GB RAM
+- Modern computer (within 5 years)
+
+Can I use it offline?
+The mobile apps support offline mode. Desktop access requires an internet connection, but drafts are saved locally and synced when reconnected.
+
+Support and Training
+
+How do I get help?
+We offer multiple support channels:
+- Email support: support@example.com (24-48 hour response)
+- Live chat: Available during business hours
+- Knowledge base: Searchable help articles
+- Video tutorials: Step-by-step guides
+- Community forum: Peer support
+
+Do you offer training?
+Yes! We provide:
+- Free webinar training sessions (weekly)
+- On-demand video courses
+- Documentation and guides
+- One-on-one onboarding (Enterprise plans)
+
+What's your uptime guarantee?
+We guarantee 99.9% uptime. Status updates are available at status.example.com. In the rare event of downtime, we provide:
+- Real-time status updates
+- Email notifications
+- Estimated resolution time

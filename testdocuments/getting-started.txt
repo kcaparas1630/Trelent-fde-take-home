@@ -1,0 +1,46 @@
+Getting Started with Our Platform
+
+Welcome to our comprehensive guide for new users. This document will walk you through the essential steps to begin using our platform effectively.
+
+Installation
+
+To install our platform, follow these simple steps:
+
+1. Download the installer from our official website
+2. Run the installer and follow the on-screen instructions
+3. Enter your license key when prompted
+4. Complete the installation wizard
+
+System Requirements
+
+Before installing, ensure your system meets these minimum requirements:
+
+- Operating System: Windows 10 or later, macOS 10.15+, or Linux (Ubuntu 20.04+)
+- RAM: 8GB minimum, 16GB recommended
+- Disk Space: 2GB available space
+- Internet Connection: Required for activation and updates
+
+First Steps
+
+After installation, follow these initial steps:
+
+1. Launch the application
+2. Sign in with your account credentials
+3. Complete the initial setup wizard
+4. Familiarize yourself with the dashboard
+
+The dashboard provides quick access to all major features and displays your recent activity.
+
+Basic Navigation
+
+The main interface consists of three primary areas:
+
+- Left Sidebar: Navigation menu for accessing different modules
+- Central Panel: Main workspace where you perform tasks
+- Right Panel: Properties and settings for selected items
+
+You can customize the layout by dragging panels to your preferred positions.
+
+Need Help?
+
+If you encounter any issues during setup, please refer to our troubleshooting guide or contact our support team at support@example.com.

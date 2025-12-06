@@ -1,0 +1,95 @@
+Troubleshooting Common Issues
+
+This guide addresses the most frequently encountered problems and their solutions.
+
+Installation Problems
+
+Cannot Install on Windows
+If you receive an error during installation on Windows:
+
+1. Run the installer as Administrator (right-click > Run as administrator)
+2. Disable antivirus temporarily during installation
+3. Ensure you have .NET Framework 4.7.2 or later installed
+4. Check that you have sufficient disk space
+
+Installation Fails on macOS
+For macOS installation issues:
+
+1. Allow the app in System Preferences > Security & Privacy
+2. Grant necessary permissions when prompted
+3. If using Apple Silicon, ensure you download the ARM64 version
+4. Update macOS to the latest version
+
+Connection Issues
+
+Cannot Connect to Server
+If you're unable to connect:
+
+1. Check your internet connection
+2. Verify firewall settings allow the application
+3. Ensure ports 80 and 443 are not blocked
+4. Try disabling VPN temporarily
+5. Clear the application cache
+
+Slow Performance
+If the application is running slowly:
+
+1. Close unnecessary background applications
+2. Check your system meets minimum requirements
+3. Clear temporary files and cache
+4. Reduce the number of open items
+5. Consider upgrading your hardware
+
+Login Problems
+
+Forgot Password
+To reset your password:
+
+1. Click "Forgot Password" on the login page
+2. Enter your registered email address
+3. Check your email for the reset link
+4. Follow the link and create a new password
+5. Passwords must be at least 12 characters
+
+Account Locked
+If your account is locked after multiple failed login attempts:
+
+1. Wait 30 minutes for automatic unlock
+2. Or contact support@example.com for immediate assistance
+3. Provide your account email and user ID
+
+Data Sync Issues
+
+Files Not Syncing
+If your files aren't syncing properly:
+
+1. Check your internet connection stability
+2. Verify sufficient cloud storage space
+3. Restart the sync service
+4. Check file permissions
+5. Look for conflicting file names
+
+Sync Conflicts
+When sync conflicts occur:
+
+1. The system creates duplicate versions
+2. Review both versions to identify differences
+3. Keep the correct version
+4. Delete the conflicting copy
+5. Consider enabling auto-merge for future conflicts
+
+Getting More Help
+
+If these solutions don't resolve your issue:
+
+1. Check our online knowledge base at help.example.com
+2. Visit our community forum for user discussions
+3. Submit a support ticket through your account dashboard
+4. For urgent issues, call our support hotline
+
+When contacting support, please provide:
+- Your account email
+- Operating system and version
+- Detailed description of the issue
+- Steps to reproduce the problem
+- Any error messages received

@@ -123,6 +123,7 @@ class Database:
                     filename TEXT NOT NULL,
                     original_path TEXT NOT NULL,
                     stored_path TEXT,
+                    content_hash TEXT,
                     status TEXT NOT NULL DEFAULT 'pending',
                     trelent_job_id TEXT,
                     markdown TEXT,
@@ -177,6 +178,28 @@ class Database:
             """
             )
             await conn.commit()
+
+            # Run migrations
+            await self._run_migrations(conn)
+
+    async def _run_migrations(self, conn):
+        """Run database migrations."""
+        # Migration 1: Add content_hash column to files table
+        try:
+            # Check if column exists
+            cursor = await conn.execute("PRAGMA table_info(files)")
+            columns = await cursor.fetchall()
+            column_names = [col[1] for col in columns]
+
+            if "content_hash" not in column_names:
+                logger.info("Running migration: Adding content_hash column to files table")
+                await conn.execute("ALTER TABLE files ADD COLUMN content_hash TEXT")
+                await conn.execute("CREATE INDEX IF NOT EXISTS idx_files_content_hash ON files(content_hash)")
+                await conn.commit()
+                logger.info("Migration completed: content_hash column added")
+        except Exception as e:
+            logger.error(f"Migration failed: {e}")
+            raise
 
     # ==================== Batch Operations ====================
 
@@ -260,16 +283,17 @@ class Database:
         filename: str,
         original_path: str,
         stored_path: str,
+        content_hash: Optional[str] = None,
     ) -> dict:
         """Create a new file record."""
         now = datetime.utcnow().isoformat()
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO files (id, batch_id, filename, original_path, stored_path, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO files (id, batch_id, filename, original_path, stored_path, content_hash, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (file_id, batch_id, filename, original_path, stored_path, now, now),
+                (file_id, batch_id, filename, original_path, stored_path, content_hash, now, now),
             )
             await conn.commit()
         return await self.get_file(file_id)
@@ -279,6 +303,36 @@ class Database:
         async with self._pool.acquire() as conn:
             cursor = await conn.execute(
                 "SELECT * FROM files WHERE id = ?", (file_id,)
+            )
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+    async def find_file_by_hash(self, content_hash: str) -> Optional[dict]:
+        """Find a successfully processed file by content hash."""
+        async with self._pool.acquire() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT * FROM files
+                WHERE content_hash = ? AND status IN ('ingested', 'completed')
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (content_hash,)
+            )
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+    async def find_file_by_name(self, filename: str) -> Optional[dict]:
+        """Find a successfully processed file by filename."""
+        async with self._pool.acquire() as conn:
+            cursor = await conn.execute(
+                """
+                SELECT * FROM files
+                WHERE filename = ? AND status IN ('ingested', 'completed')
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (filename,)
             )
             row = await cursor.fetchone()
             return dict(row) if row else None

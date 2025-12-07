@@ -11,6 +11,9 @@ A complete document-to-HTML conversion pipeline with:
 - **Real-time Progress** - Percentage-based tracking with polling updates
 - **Topic Grouping** - AI-powered organization of documents by topic
 - **Error Recovery** - Continue on failures + retry failed files
+- **Duplicate Detection** - Prevents re-processing of already uploaded files
+- **Rate Limiting** - 10 uploads/minute to prevent API overload
+- **Concurrent Processing** - Multiple batches can run in parallel
 
 ## Quick Start
 

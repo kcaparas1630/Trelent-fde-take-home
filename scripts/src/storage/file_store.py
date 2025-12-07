@@ -9,8 +9,13 @@ from ..utils.config import settings
 
 logger = logging.getLogger(__name__)
 
+# OBSERVATION: Videos might not be fully supported for this test assessment.
+# Trelent API returns "Converted objects not found" error, which suggests
+# the job queue didn't start or the job isn't found.
+
 # Allowed file extensions for upload
 ALLOWED_EXTENSIONS = {
+    # Documents
     ".pdf",
     ".docx",
     ".doc",
@@ -23,6 +28,10 @@ ALLOWED_EXTENSIONS = {
     ".xlsx",
     ".xls",
     ".csv",
+    # Videos
+    ".mp4",
+    ".avi",
+    ".mov",
 }
 
 

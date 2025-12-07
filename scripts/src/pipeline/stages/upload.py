@@ -1,11 +1,10 @@
 """Stage 1: File upload and validation."""
 
+import hashlib
 import logging
 import uuid
-from pathlib import Path
-from typing import BinaryIO
 
-from ..models import FileStatus, PipelineStage
+from ..models import PipelineStage
 from ..progress import ProgressTracker
 from ...storage.database import Database
 from ...storage.file_store import FileStore
@@ -52,6 +51,7 @@ class UploadStage:
         file_ids = []
         processed = 0
         failed = 0
+        duplicates = 0
 
         for filename, content in files:
             try:
@@ -66,6 +66,26 @@ class UploadStage:
                     )
                     continue
 
+                # Check for duplicate by filename first
+                existing_file = await self.db.find_file_by_name(filename)
+                if existing_file:
+                    logger.info(
+                        f"Skipping duplicate filename: {filename} "
+                        f"(already processed in batch {existing_file['batch_id']})"
+                    )
+                    processed += 1
+                    duplicates += 1
+                    await self.progress.update_item_progress(
+                        processed=processed,
+                        failed=failed,
+                        current_file=filename,
+                        message=f"Skipped {filename} (duplicate)",
+                    )
+                    continue
+
+                # Compute content hash for duplicate detection
+                content_hash = hashlib.sha256(content).hexdigest()
+
                 # Store file
                 stored_path = await self.file_store.store_upload(
                     batch_id, filename, content
@@ -79,6 +99,7 @@ class UploadStage:
                     filename=filename,
                     original_path=filename,
                     stored_path=str(stored_path),
+                    content_hash=content_hash,
                 )
 
                 file_ids.append(file_id)
@@ -101,6 +122,14 @@ class UploadStage:
                 )
 
         logger.info(
-            f"Upload stage complete: {processed} uploaded, {failed} failed"
+            f"Upload stage complete: {len(file_ids)} new, {duplicates} duplicates, {failed} failed"
         )
+
+        # If all files were duplicates, raise a specific error
+        if not file_ids and duplicates > 0:
+            if duplicates == 1:
+                raise ValueError("File has already been uploaded and processed")
+            else:
+                raise ValueError(f"All {duplicates} files have already been uploaded and processed")
+
         return file_ids

@@ -8,9 +8,6 @@ import { GuideCard } from "@/components/guide-card";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 
 export default function GuidesPage() {
@@ -119,7 +116,7 @@ export default function GuidesPage() {
             {Object.entries(groupedGuides).map(([topic, topicGuides]) => (
               <section key={topic}>
                 <h2 className="text-lg font-semibold mb-4">{topic}</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {topicGuides.map((guide) => (
                     <GuideCard key={guide.id} guide={guide} />
                   ))}

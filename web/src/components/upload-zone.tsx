@@ -117,7 +117,7 @@ export function UploadZone({
               or click to browse
             </p>
             <p className="text-xs text-muted-foreground mt-4">
-              Supported: PDF, Word, PowerPoint, Excel, Text, HTML
+              Supported: PDF, Word, PowerPoint, Excel, Text, HTML, Videos (MP4, AVI, MOV)
             </p>
           </>
         )}

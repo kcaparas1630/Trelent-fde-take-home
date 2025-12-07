@@ -32,6 +32,10 @@ class PipelineOrchestrator:
     3. Topic Grouping
     4. Content Rewriting
     5. HTML Generation
+
+    NOTE: Multiple batches can run concurrently without blocking.
+    Trelent API handles job queuing on their end, so this orchestrator
+    doesn't need its own queue. Scalability depends on Trelent's infrastructure.
     """
 
     def __init__(

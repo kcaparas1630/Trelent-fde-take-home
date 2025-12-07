@@ -5,13 +5,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from .dependencies import set_orchestrator
-from .routes import router
+from .routes import router, get_user_identifier
 from ..pipeline import PipelineOrchestrator
 from ..utils.config import settings
 
 logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_user_identifier)
 
 
 @asynccontextmanager
@@ -49,6 +53,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Configure rate limiting
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # Include routes
     app.include_router(router, prefix="/api")

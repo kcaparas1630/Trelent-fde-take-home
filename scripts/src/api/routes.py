@@ -3,9 +3,10 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+from slowapi import Limiter
 
 from .dependencies import get_orchestrator
 from ..pipeline.models import BatchProgress, BatchStatus, PipelineStage
@@ -13,6 +14,24 @@ from ..pipeline.models import BatchProgress, BatchStatus, PipelineStage
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def get_user_identifier(request: Request) -> str:
+    """
+    Get user identifier for rate limiting.
+
+    Currently uses IP address. When authentication is added,
+    replace this with user ID or API key.
+    """
+    # TODO: When authentication is added, use this instead:
+    # if hasattr(request.state, "user") and request.state.user:
+    #     return f"user:{request.state.user.id}"
+    # return "anonymous"
+
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=get_user_identifier)
 
 
 # ==================== Response Models ====================
@@ -100,12 +119,15 @@ async def debug_trelent():
 
 
 @router.post("/upload", response_model=BatchResponse)
-async def upload_files(files: list[UploadFile] = File(...)):
+@limiter.limit("10/minute")
+async def upload_files(request: Request, files: list[UploadFile] = File(...)):
     """
     Upload files and start processing.
 
     Accepts multiple files (PDF, DOCX, DOC, TXT, etc.) and starts
     the pipeline to convert them to HTML guides.
+
+    Rate limit: 10 requests per minute per IP to prevent API overload.
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files provided")

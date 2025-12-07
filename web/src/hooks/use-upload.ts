@@ -17,6 +17,7 @@ interface UseUploadResult {
 }
 
 const ALLOWED_EXTENSIONS = [
+  // Documents
   ".pdf",
   ".docx",
   ".doc",
@@ -29,6 +30,10 @@ const ALLOWED_EXTENSIONS = [
   ".xlsx",
   ".xls",
   ".csv",
+  // Videos
+  ".mp4",
+  ".avi",
+  ".mov",
 ];
 
 export function useUpload({

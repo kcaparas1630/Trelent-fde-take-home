@@ -69,15 +69,23 @@ class IngestStage:
                     message=f"Ingesting {filename}...",
                 )
 
-                # Call Trelent API
-                async with self.trelent:
-                    markdown = await self.trelent.ingest_file(
-                        Path(stored_path),
-                        poll_interval=3.0,
-                        max_wait=300.0,
-                    )
+                is_text_file = filename.lower().endswith(('.txt', '.text'))
+
+                # Text files: read directly without Trelent API
+                if is_text_file:
+                    logger.info(f"Reading text file directly: {filename}")
+                    markdown = Path(stored_path).read_text(encoding='utf-8', errors='ignore')
+                else:
+                    # Other files: use Trelent API
+                    async with self.trelent:
+                        markdown = await self.trelent.ingest_file(
+                            Path(stored_path),
+                            poll_interval=3.0,
+                            max_wait=300.0,
+                        )
 
                 # Update with markdown result
+                logger.info(f"Saving markdown for {filename}: {len(markdown)} characters")
                 await self.db.update_file(
                     file_id,
                     status=FileStatus.INGESTED.value,

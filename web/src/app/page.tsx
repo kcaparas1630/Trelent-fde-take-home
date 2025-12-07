@@ -19,6 +19,7 @@ import {
 
 export default function Home() {
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [dismissedBatchIds, setDismissedBatchIds] = useState<Set<string>>(new Set());
   const [guides, setGuides] = useState<Guide[]>([]);
   const [recentBatches, setRecentBatches] = useState<BatchSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -34,48 +35,72 @@ export default function Home() {
     },
   });
 
-  // Polling hook
   const { progress, isPolling } = usePolling({
     batchId: currentBatchId,
     interval: 2000,
     onComplete: async (finalProgress) => {
-      // Refresh guides when complete
       if (
         finalProgress.status === "completed" ||
         finalProgress.status === "partial_failed"
       ) {
+        // OPTIMIZATION: Only refresh new guides instead of full list
+        // Could use pagination or incremental updates
         await loadGuides();
       }
     },
   });
 
-  // Load guides
   const loadGuides = useCallback(async () => {
     try {
       const response = await listGuides();
       setGuides(response.guides);
-    } catch (err) {
-      console.error("Failed to load guides:", err);
+    } catch {
+      // Error loading guides
     }
   }, []);
 
-  // Load recent batches
   const loadBatches = useCallback(async () => {
     try {
       const response = await listBatches(5);
       setRecentBatches(response.batches);
-    } catch (err) {
-      console.error("Failed to load batches:", err);
+    } catch {
+      // Error loading batches
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     loadGuides();
     loadBatches();
-  }, [loadGuides, loadBatches]);
 
-  // Handle file selection
+    const checkInProgressBatches = async () => {
+      try {
+        const response = await listBatches(1);
+        const mostRecent = response.batches[0];
+
+        if (
+          mostRecent &&
+          mostRecent.status === "processing" &&
+          !currentBatchId &&
+          !dismissedBatchIds.has(mostRecent.id)
+        ) {
+          setCurrentBatchId(mostRecent.id);
+        }
+      } catch {
+        // Error checking in-progress batches
+      }
+    };
+
+    void checkInProgressBatches();
+
+    // OPTIMIZATION: Stop polling batches when user is viewing a batch
+    // Currently polls every 10s even when unnecessary
+    const refreshInterval = setInterval(() => {
+      void loadBatches();
+    }, 10000);
+
+    return () => clearInterval(refreshInterval);
+  }, [loadGuides, loadBatches, currentBatchId, dismissedBatchIds]);
+
   const handleFilesSelected = useCallback(
     async (files: File[]) => {
       setError(null);
@@ -84,7 +109,6 @@ export default function Home() {
     [upload]
   );
 
-  // Handle retry
   const handleRetry = useCallback(async () => {
     if (!currentBatchId) return;
     try {
@@ -93,6 +117,13 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Retry failed");
     }
+  }, [currentBatchId]);
+
+  const handleBack = useCallback(() => {
+    if (currentBatchId) {
+      setDismissedBatchIds((prev) => new Set(prev).add(currentBatchId));
+    }
+    setCurrentBatchId(null);
   }, [currentBatchId]);
 
   const displayError = error || uploadError?.message;
@@ -127,7 +158,7 @@ export default function Home() {
               <CardHeader>
                 <CardTitle>Upload Documents</CardTitle>
                 <CardDescription>
-                  Upload your documents and we'll convert them into organized HTML guides
+                  Upload your documents and we&apos;ll convert them into organized HTML guides
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -148,7 +179,11 @@ export default function Home() {
 
             {/* Progress display */}
             {progress && (
-              <JobProgress progress={progress} onRetry={handleRetry} />
+              <JobProgress
+                progress={progress}
+                onRetry={handleRetry}
+                onBack={handleBack}
+              />
             )}
 
             {/* Recent batches */}
@@ -156,14 +191,24 @@ export default function Home() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Recent Conversions</CardTitle>
+                  <CardDescription className="text-xs">
+                    Click to view batch progress
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {recentBatches.map((batch) => (
                       <div
                         key={batch.id}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-muted cursor-pointer"
-                        onClick={() => setCurrentBatchId(batch.id)}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-muted cursor-pointer transition-colors"
+                        onClick={() => {
+                          setDismissedBatchIds((prev) => {
+                            const next = new Set(prev);
+                            next.delete(batch.id);
+                            return next;
+                          });
+                          setCurrentBatchId(batch.id);
+                        }}
                       >
                         <div>
                           <p className="text-sm font-medium">
@@ -173,17 +218,24 @@ export default function Home() {
                             {new Date(batch.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            batch.status === "completed"
-                              ? "bg-green-100 text-green-700"
-                              : batch.status === "failed"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-blue-100 text-blue-700"
-                          }`}
-                        >
-                          {batch.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {batch.status === "processing" && (
+                            <div className="animate-pulse">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            </div>
+                          )}
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              batch.status === "completed"
+                                ? "bg-green-100 text-green-700"
+                                : batch.status === "failed"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
+                            {batch.status}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { BatchProgress } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface JobProgressProps {
   progress: BatchProgress;
   onRetry?: () => void;
+  onBack?: () => void;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -28,18 +30,53 @@ const STATUS_COLORS: Record<string, string> = {
   failed: "bg-red-500",
 };
 
-export function JobProgress({ progress, onRetry }: JobProgressProps) {
+export function JobProgress({ progress, onRetry, onBack }: JobProgressProps) {
+  const [isRetrying, setIsRetrying] = useState(false);
+
   const stageLabel = STAGE_LABELS[progress.stage] || progress.stage;
   const statusColor = STATUS_COLORS[progress.status] || "bg-gray-400";
   const isComplete = progress.status === "completed";
   const hasFailed =
     progress.status === "failed" || progress.status === "partial_failed";
 
+  // Don't show retry for duplicate file errors
+  const isDuplicateError =
+    progress.error_message?.includes("already been uploaded") || false;
+  const showRetry = hasFailed && onRetry && !isDuplicateError && !isRetrying;
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await onRetry?.();
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Processing Documents</CardTitle>
+          <div className="flex items-center gap-2">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Go back"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            )}
+            <CardTitle className="text-lg">Processing Documents</CardTitle>
+          </div>
           <span
             className={`px-2 py-1 text-xs font-medium rounded-full text-white ${statusColor}`}
           >
@@ -92,13 +129,13 @@ export function JobProgress({ progress, onRetry }: JobProgressProps) {
           </div>
         )}
 
-        {/* Retry button for partial failures */}
-        {progress.status === "partial_failed" && onRetry && (
+        {/* Retry button for failures (but not for duplicates) */}
+        {showRetry && (
           <button
-            onClick={onRetry}
+            onClick={handleRetry}
             className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >
-            Retry Failed Files
+            {progress.status === "failed" ? "Retry Batch" : "Retry Failed Files"}
           </button>
         )}
       </CardContent>

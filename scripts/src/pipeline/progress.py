@@ -88,6 +88,7 @@ class ProgressTracker:
 
     async def mark_failed(self, error_message: str):
         """Mark the batch as failed."""
+        logger.info(f"Batch {self.batch_id} marked as FAILED: {error_message}")
         self._current_stage = PipelineStage.FAILED
         self._message = error_message
         await self._persist(status=BatchStatus.FAILED, error_message=error_message)

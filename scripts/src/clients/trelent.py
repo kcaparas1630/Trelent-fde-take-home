@@ -223,7 +223,7 @@ class TrelentClient:
         await self._ensure_client()
 
         try:
-            response = await self._client.get(f"/jobs/{job_id}")
+            response = await self._client.get(f"/jobs/{job_id}", params={"include_markdown": True})
 
             if response.status_code == 404:
                 raise TrelentError(f"Job not found: {job_id}")
@@ -243,6 +243,7 @@ class TrelentClient:
         job_id: str,
         poll_interval: float = 2.0,
         max_wait: float = 600.0,
+        max_queued_time: float = 60.0,
     ) -> dict:
         """
         Wait for a job to complete.
@@ -251,6 +252,7 @@ class TrelentClient:
             job_id: The job ID to wait for
             poll_interval: Seconds between status checks
             max_wait: Maximum seconds to wait
+            max_queued_time: Maximum seconds a job can stay queued before failing
 
         Returns:
             Completed job data with markdown result
@@ -259,20 +261,55 @@ class TrelentClient:
             TrelentJobError: If job fails or times out
         """
         elapsed = 0.0
+        queued_time = 0.0
+        consecutive_errors = 0
+        max_consecutive_errors = 3
 
         while elapsed < max_wait:
-            status = await self.get_job_status(job_id)
-            job_status = status.get("status", "").lower()
+            try:
+                status = await self.get_job_status(job_id)
+                consecutive_errors = 0  # Reset on successful request
 
-            if job_status in ("completed", "complete", "done"):
-                logger.info(f"Job {job_id} completed successfully")
-                return status
+                job_status = status.get("status", "").lower()
 
-            if job_status in ("failed", "error"):
-                error_msg = status.get("error", "Unknown error")
-                raise TrelentJobError(f"Job {job_id} failed: {error_msg}")
+                if job_status in ("completed", "complete", "done"):
+                    logger.info(f"Job {job_id} completed successfully")
+                    return status
 
-            logger.debug(f"Job {job_id} status: {job_status}, waiting...")
+                if job_status in ("failed", "error"):
+                    error_msg = status.get("error", "Unknown error")
+                    errors = status.get("errors")
+                    if errors:
+                        error_msg = f"{error_msg} - Errors: {errors}"
+                    raise TrelentJobError(f"Job {job_id} failed: {error_msg}")
+
+                # Check if job is stuck in queued state
+                if job_status == "queued":
+                    queued_time += poll_interval
+                    if queued_time >= max_queued_time:
+                        raise TrelentJobError(
+                            f"Job {job_id} stuck in queued state for {queued_time}s. "
+                            f"The Trelent service may not be processing jobs."
+                        )
+                else:
+                    queued_time = 0  # Reset if job progresses past queued
+
+
+            except TrelentJobError:
+                # Re-raise job errors immediately
+                raise
+            except Exception as e:
+                consecutive_errors += 1
+                logger.warning(
+                    f"Error polling job {job_id} (attempt {consecutive_errors}/{max_consecutive_errors}): {e}"
+                )
+
+                if consecutive_errors >= max_consecutive_errors:
+                    raise TrelentJobError(
+                        f"Failed to poll job {job_id} after {consecutive_errors} consecutive errors. "
+                        f"Last error: {e}"
+                    ) from e
+
             await asyncio.sleep(poll_interval)
             elapsed += poll_interval
 
@@ -283,6 +320,7 @@ class TrelentClient:
         file_path: Path,
         poll_interval: float = 2.0,
         max_wait: float = 600.0,
+        max_queued_time: float = 600.0,
     ) -> str:
         """
         Convenience method to ingest a file and return markdown.
@@ -291,14 +329,43 @@ class TrelentClient:
             file_path: Path to file to ingest
             poll_interval: Seconds between status checks
             max_wait: Maximum seconds to wait
+            max_queued_time: Maximum seconds a job can stay queued before failing
 
         Returns:
             Markdown content from the ingested file
         """
         job_id = await self.create_job(file_path)
-        result = await self.wait_for_completion(job_id, poll_interval, max_wait)
+        result = await self.wait_for_completion(job_id, poll_interval, max_wait, max_queued_time)
 
         # Extract markdown from result
+        # First try the delivery field (for s3-signed-url output type)
+        delivery = result.get("delivery")
+        if delivery and isinstance(delivery, dict):
+            # Delivery is a dict with file IDs as keys
+            # Get the first file's delivery info
+            for file_id, file_delivery in delivery.items():
+                if isinstance(file_delivery, dict):
+                    # First try direct markdown field
+                    markdown = file_delivery.get("markdown")
+                    if markdown:
+                        logger.info(f"Successfully extracted markdown from delivery ({len(markdown)} characters)")
+                        return markdown
+
+                    # Then try markdown_delivery with URL
+                    markdown_delivery = file_delivery.get("markdown_delivery")
+                    if markdown_delivery and isinstance(markdown_delivery, dict):
+                        url = markdown_delivery.get("url")
+                        if url:
+                            logger.info(f"Fetching markdown from delivery URL: {url}")
+                            async with httpx.AsyncClient() as client:
+                                response = await client.get(url)
+                                if response.status_code == 200:
+                                    logger.info(f"Successfully fetched markdown from URL ({len(response.text)} characters)")
+                                    return response.text
+                                else:
+                                    logger.warning(f"Failed to fetch from delivery URL: {response.status_code}")
+
+        # Fallback to checking other possible fields
         markdown = (
             result.get("markdown")
             or result.get("result", {}).get("markdown")
@@ -309,5 +376,7 @@ class TrelentClient:
         if not markdown:
             logger.warning(f"No markdown in job result: {result}")
             markdown = ""
+        else:
+            logger.info(f"Successfully extracted markdown ({len(markdown)} characters)")
 
         return markdown
